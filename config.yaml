@@ -1,0 +1,36 @@
+# AI SDR Configuration File
+# All settings can be modified without changing code
+
+limits:
+  max_companies: 30
+  max_profiles_per_company: 4
+
+scheduling:
+  enabled: false
+  interval_hours: 24
+
+apify:
+  # Timeout in seconds for Apify actors
+  timeout: 300
+  # Max retries for failed scraping
+  max_retries: 3
+
+openrouter:
+  # Model to use for lead scoring
+  model: "anthropic/claude-3.5-sonnet"
+  # Temperature for AI responses (0-1, lower = more deterministic)
+  temperature: 0.3
+  # Max tokens for each scoring request
+  max_tokens: 500
+
+scoring:
+  # Minimum score to consider a lead qualified (0-100)
+  min_qualified_score: 60
+
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  file: "logs/sdr.log"
+
+google_sheets:
+  # How many rows to check for existing leads (prevents duplicates)
+  duplicate_check_rows: 1000
