@@ -1,0 +1,85 @@
+🚀 HOW TO RUN AI SDR ON GOOGLE COLAB (FREE & EASY)
+==========================================================
+
+Your AI SDR system is ready! Follow these simple steps to generate leads:
+
+STEP 1: Upload Notebook to Google Colab
+----------------------------------------
+1. Go to: https://colab.research.google.com/
+2. Click: File → Upload notebook
+3. Upload the file: AI_SDR_Google_Colab.ipynb (attached)
+
+OR
+
+1. Go to: https://colab.research.google.com/
+2. Click: File → Open notebook → GitHub
+3. Enter: https://github.com/saria3321/SDR
+4. Select: AI_SDR_Google_Colab.ipynb
+
+STEP 2: Run All Cells
+---------------------
+1. Click: Runtime → Run all
+2. Wait 5-10 minutes (it will show progress)
+3. That's it!
+
+STEP 3: Check Results
+--------------------
+Open your Output Sheet:
+https://docs.google.com/spreadsheets/d/1wIzjo9vJfAZiutLxeSv_0zqGviGwFFrK7DkP3lSrUxc
+
+You'll see:
+✅ Qualified leads with names, titles, companies
+✅ LinkedIn URLs for outreach
+✅ AI scores (0-100)
+✅ Reasoning for each score
+
+IMPORTANT: Setup Your ICP First!
+---------------------------------
+Before running, set up your ICP in this sheet:
+https://docs.google.com/spreadsheets/d/1Z1N2p8t0iUB2FaldGcpDGsu7qbbKTJ-LfB6PQKn7v3Y
+
+1. Create tab: "ICP Settings"
+2. Row 1 (Headers):
+   Industries | Company Size Min | Company Size Max | Countries | Target Job Titles | Required Keywords | Seniority Levels | Departments | Company Types | Languages | Excluded Keywords | Years Experience Min | Years Experience Max
+
+3. Row 2 (Your Data) - Example:
+   Software, SaaS | 10 | 500 | France, Belgium | CEO, CTO, VP Sales | B2B, Enterprise | C-Level, VP | Sales, Marketing | Startup, SMB | French, English | Agency, Freelance | 3 | 20
+
+COST:
+-----
+Test run (4 profiles): ~$0.10
+Full run (120 profiles): ~$0.50-0.70
+
+WHAT THE NOTEBOOK DOES:
+-----------------------
+Cell 1: Installs Python packages (2 min)
+Cell 2: Downloads the code from GitHub (30 sec)
+Cell 3: Sets up your credentials (instant)
+Cell 4: Creates ICP template (optional, 30 sec)
+Cell 5: Runs test - 4 profiles (5-10 min) ⭐ START HERE
+Cell 6: Full production - 120 profiles (15-20 min)
+Cell 7: Custom run with your own limits
+
+TIPS:
+-----
+✅ Start with Cell 5 (test run) to verify it works
+✅ Check your Google Sheet for results
+✅ If satisfied, run Cell 6 for full production
+✅ You can run this notebook anytime to get more leads!
+
+TROUBLESHOOTING:
+----------------
+"ModuleNotFoundError" → Run Cell 1 first (installs packages)
+"Permission denied" → Make sure Google Sheets are shared with service account
+"No profiles found" → Your ICP might be too restrictive, try broader criteria
+
+SUPPORT:
+--------
+- Documentation: https://github.com/saria3321/SDR
+- Any issues? Let me know!
+
+==========================================================
+
+Ready to generate leads? Open Google Colab and upload the notebook!
+
+Good luck! 🎯
