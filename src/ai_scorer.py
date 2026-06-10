@@ -3,7 +3,7 @@ AI Lead Scorer - Score leads using OpenRouter AI
 """
 import logging
 import json
-from typing import Dict, Any
+from typing import Dict, Any, Tuple, List
 import openai
 from .models import ICPSettings, EmployeeProfile, ScoredLead
 from datetime import datetime
@@ -136,7 +136,7 @@ Provide your assessment:"""
 
         return prompt
 
-    def _parse_ai_response(self, response_text: str) -> tuple[int, str]:
+    def _parse_ai_response(self, response_text: str) -> Tuple[int, str]:
         """Parse AI response to extract score and reasoning"""
         try:
             lines = response_text.strip().split('\n')
@@ -162,8 +162,8 @@ Provide your assessment:"""
             logger.warning(f"Failed to parse AI response: {e}")
             return 50, response_text.strip()
 
-    def score_batch(self, profiles: list[EmployeeProfile], icp: ICPSettings,
-                   min_score: int = 60) -> list[ScoredLead]:
+    def score_batch(self, profiles: List[EmployeeProfile], icp: ICPSettings,
+                   min_score: int = 60) -> List[ScoredLead]:
         """
         Score multiple leads and filter by minimum score
 
