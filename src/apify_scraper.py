@@ -44,18 +44,15 @@ class ApifyScraper:
         """
         logger.info(f"Searching for companies matching ICP (max: {max_companies})")
 
-        # Build search query from ICP
-        search_query = self._build_company_search_query(icp)
-
-        run_input = {
-            "searchQuery": search_query,
-            "maxResults": max_companies,
-            "includeCompanyDetails": True
-        }
+        # Build structured filter (the format client provided)
+        run_input = self._build_company_input(icp, max_companies)
+        logger.info(f"Using structured filters: industries={len(run_input.get('industryIds', []))}, locations={len(run_input.get('locations', []))}")
 
         try:
             run = self.client.actor(self.company_actor).call(run_input=run_input)
-            dataset_items = self.client.dataset(run["defaultDatasetId"]).list_items().items
+            # Handle both dict and object responses from Apify
+            dataset_id = run.get("defaultDatasetId") if isinstance(run, dict) else run.get('default_dataset_id')
+            dataset_items = self.client.dataset(dataset_id).list_items().items
 
             companies = []
             for item in dataset_items[:max_companies]:
@@ -96,37 +93,46 @@ class ApifyScraper:
         """
         logger.info(f"Scraping employees from {company.name} (max: {max_profiles})")
 
-        # Build job title filters
-        job_title_filters = icp.target_job_titles if icp.target_job_titles else []
+        # Build search query: "people at [Company] [Job Titles]"
+        job_titles = ' OR '.join(icp.target_job_titles[:3]) if icp.target_job_titles else 'CEO CTO Founder'
+        search_query = f"people at {company.name} {job_titles}"
 
         run_input = {
-            "companyUrl": company.linkedin_url,
-            "jobTitles": job_title_filters,
-            "maxResults": max_profiles,
-            "includeProfileDetails": True
+            "searchQuery": search_query,
+            "maxItems": max_profiles,
+            "scraperMode": "full"
         }
+
+        logger.info(f"Searching: {search_query}")
 
         try:
             run = self.client.actor(self.employee_actor).call(run_input=run_input)
-            dataset_items = self.client.dataset(run["defaultDatasetId"]).list_items().items
+            # Handle both dict and object responses from Apify
+            dataset_id = run.get("defaultDatasetId") if isinstance(run, dict) else run.get('default_dataset_id')
+            dataset_items = self.client.dataset(dataset_id).list_items().items
 
             employees = []
             for item in dataset_items[:max_profiles]:
                 try:
+                    # Handle the actual API response format
+                    full_name = f"{item.get('firstName', '')} {item.get('lastName', '')}".strip()
+                    location_data = item.get('location', {})
+                    location_str = location_data.get('linkedinText') if isinstance(location_data, dict) else str(location_data) if location_data else None
+
                     employee = EmployeeProfile(
-                        full_name=item.get('name', ''),
-                        job_title=item.get('jobTitle', ''),
+                        full_name=full_name or item.get('fullName', 'N/A'),
+                        job_title=item.get('headline', ''),
                         linkedin_url=item.get('linkedinUrl', ''),
                         company_name=company.name,
                         company_url=company.linkedin_url,
-                        location=item.get('location'),
+                        location=location_str,
                         industry=company.industry,
                         company_size=company.company_size,
-                        seniority_level=self._extract_seniority(item.get('jobTitle', '')),
-                        department=self._extract_department(item.get('jobTitle', '')),
-                        profile_summary=item.get('summary'),
-                        email=item.get('email'),
-                        phone=item.get('phone')
+                        seniority_level=self._extract_seniority(item.get('headline', '')),
+                        department=self._extract_department(item.get('headline', '')),
+                        profile_summary=item.get('about'),
+                        email=None,  # Not available without premium
+                        phone=None   # Not available without premium
                     )
                     employees.append(employee)
                 except Exception as e:
@@ -176,6 +182,63 @@ class ApifyScraper:
 
         logger.info(f"Scraping complete: {len(all_employees)} total profiles from {len(companies)} companies")
         return all_employees
+
+    def _build_company_input(self, icp: ICPSettings, max_companies: int) -> dict:
+        """Build structured input for harvestapi/linkedin-company-search"""
+        # Industry mapping (LinkedIn numeric IDs)
+        industry_map = {
+            'Software': '4',
+            'SaaS': '4',
+            'Software Development': '4',
+            'Technology': '4',
+            'IT Services': '96',
+            'Information Technology': '96',
+            'Computer & Network Security': '118',
+            'Cybersecurity': '118',
+            'Financial Services': '43',
+            'FinTech': '43',
+            'Internet': '6',
+            'E-commerce': '96',
+            'Cloud Computing': '96',
+            'AI': '4',
+            'Machine Learning': '4',
+        }
+
+        # Convert company size to LinkedIn ranges
+        size_ranges = []
+        if icp.company_size_min and icp.company_size_max:
+            # Map to LinkedIn ranges: "1-10", "11-50", "51-200", "201-500", "501-1000", "1001-5000", "5001-10000", "10001+"
+            if icp.company_size_max <= 50:
+                size_ranges = ["1-10", "11-50"]
+            elif icp.company_size_max <= 200:
+                size_ranges = ["11-50", "51-200"]
+            elif icp.company_size_max <= 500:
+                size_ranges = ["51-200", "201-500"]
+            elif icp.company_size_max <= 1000:
+                size_ranges = ["201-500", "501-1000"]
+            else:
+                size_ranges = ["501-1000", "1001-5000", "5001-10000"]
+
+        # Convert industry names to IDs
+        industry_ids = []
+        for industry in icp.industries:
+            if industry in industry_map:
+                industry_id = industry_map[industry]
+                if industry_id not in industry_ids:
+                    industry_ids.append(industry_id)
+
+        # Build the input in the format client provided
+        run_input = {
+            "companySize": size_ranges if size_ranges else ["51-200", "201-500", "501-1000"],
+            "industryIds": industry_ids if industry_ids else ["4", "96"],  # Default to Software & IT
+            "locations": icp.countries if icp.countries else ["France"],
+            "maxItems": max_companies,
+            "scraperMode": "full",
+            "startPage": 1,
+            "takePages": 20
+        }
+
+        return run_input
 
     def _build_company_search_query(self, icp: ICPSettings) -> str:
         """Build LinkedIn search query from ICP settings"""

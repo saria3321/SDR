@@ -17,7 +17,7 @@ apify:
 
 openrouter:
   # Model to use for lead scoring
-  model: "anthropic/claude-3.5-sonnet"
+  model: "meta-llama/llama-3.1-8b-instruct"
   # Temperature for AI responses (0-1, lower = more deterministic)
   temperature: 0.3
   # Max tokens for each scoring request
@@ -25,7 +25,8 @@ openrouter:
 
 scoring:
   # Minimum score to consider a lead qualified (0-100)
-  min_qualified_score: 60
+  # Set to 0 to accept all leads without AI filtering
+  min_qualified_score: 0
 
 logging:
   level: "INFO"  # DEBUG, INFO, WARNING, ERROR

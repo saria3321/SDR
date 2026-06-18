@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  ai-sdr:
+    build: .
+    container_name: ai-sdr-lead-generation
+    environment:
+      # Apify Configuration
+      - APIFY_API_TOKEN=${APIFY_API_TOKEN}
+
+      # OpenRouter Configuration
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+
+      # Google Sheets Configuration
+      - GOOGLE_SHEETS_CREDENTIALS_PATH=credentials.json
+      - ICP_SHEET_ID=${ICP_SHEET_ID}
+      - OUTPUT_SHEET_ID=${OUTPUT_SHEET_ID}
+      - ICP_SHEET_TAB_NAME=ICP Settings
+      - OUTPUT_SHEET_TAB_NAME=Qualified Leads
+
+      # Apify Actor IDs
+      - APIFY_COMPANY_SCRAPER_ACTOR=harvestapi/linkedin-company-search
+      - APIFY_EMPLOYEE_SCRAPER_ACTOR=harvestapi/linkedin-profile-search
+
+    volumes:
+      - ./logs:/app/logs
+      - ./credentials.json:/app/credentials.json:ro
+      - ./.env:/app/.env:ro
+
+    restart: unless-stopped
+
+    # Optional: Override command for custom runs
+    # command: python main.py --max-companies 10 --max-profiles 5
