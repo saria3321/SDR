@@ -128,39 +128,88 @@ class AIScorer:
 4. Department Fit (15 points): Does their department align with ICP?
 5. Keywords & Signals (10 points): Required keywords present, excluded keywords absent?
 
-**RESPONSE FORMAT:**
-Score: [0-100]
-Reasoning: [2-3 sentences explaining the score, highlighting matches and mismatches]
+**RESPONSE FORMAT (IMPORTANT - Follow this exact format):**
+Score: [number from 0-100]
+Reasoning: [2-3 sentences explaining the score]
 
-Provide your assessment:"""
+Example:
+Score: 75
+Reasoning: Strong match as CTO at software company in France. Company size and industry align perfectly with ICP. Job title indicates high decision-making authority.
+
+Provide your assessment now:"""
 
         return prompt
 
     def _parse_ai_response(self, response_text: str) -> Tuple[int, str]:
         """Parse AI response to extract score and reasoning"""
         try:
-            lines = response_text.strip().split('\n')
-            score = 0
+            import re
+
+            # Try multiple parsing strategies
+            score = None
             reasoning = ""
 
-            for line in lines:
-                if line.startswith('Score:'):
-                    score_str = line.replace('Score:', '').strip()
-                    # Extract just the number
-                    score = int(''.join(filter(str.isdigit, score_str)))
-                    score = max(0, min(100, score))  # Clamp to 0-100
-                elif line.startswith('Reasoning:'):
-                    reasoning = line.replace('Reasoning:', '').strip()
+            # Strategy 1: Look for "Score: XX" or "Score XX" pattern (case-insensitive)
+            score_match = re.search(r'score[:\s]+(\d+)', response_text, re.IGNORECASE)
+            if score_match:
+                score = int(score_match.group(1))
 
-            # If reasoning is still empty, use the whole response
+            # Strategy 2: Look for "XX/100" pattern
+            if score is None:
+                ratio_match = re.search(r'(\d+)\s*/\s*100', response_text)
+                if ratio_match:
+                    score = int(ratio_match.group(1))
+
+            # Strategy 3: Look for "is XX out of" pattern
+            if score is None:
+                out_of_match = re.search(r'is\s+(\d+)\s+out\s+of', response_text, re.IGNORECASE)
+                if out_of_match:
+                    score = int(out_of_match.group(1))
+
+            # Strategy 4: Look for just a number at the start (0-100 range)
+            if score is None:
+                num_match = re.search(r'^\s*(\d+)\s*[/\n]', response_text)
+                if num_match:
+                    num = int(num_match.group(1))
+                    if 0 <= num <= 100:
+                        score = num
+
+            # Default score if none found
+            if score is None:
+                logger.warning(f"Could not parse score from: {response_text[:100]}")
+                score = 50  # Default to middle
+
+            # Clamp score to valid range
+            score = max(0, min(100, score))
+
+            # Extract reasoning
+            reasoning_match = re.search(r'reasoning[:\s]+(.*?)(?:\n\n|$)', response_text, re.IGNORECASE | re.DOTALL)
+            if reasoning_match:
+                reasoning = reasoning_match.group(1).strip()
+            else:
+                # Use everything after the score line
+                lines = response_text.strip().split('\n')
+                reasoning_lines = []
+                found_score = False
+                for line in lines:
+                    if re.search(r'score[:\s]+\d+', line, re.IGNORECASE):
+                        found_score = True
+                        continue
+                    if found_score and line.strip():
+                        reasoning_lines.append(line.strip())
+                reasoning = ' '.join(reasoning_lines) if reasoning_lines else response_text.strip()
+
+            # Ensure reasoning is not empty
             if not reasoning:
                 reasoning = response_text.strip()
 
+            logger.debug(f"Parsed - Score: {score}, Reasoning: {reasoning[:50]}...")
             return score, reasoning
 
         except Exception as e:
-            logger.warning(f"Failed to parse AI response: {e}")
-            return 50, response_text.strip()
+            logger.warning(f"Failed to parse AI response: {e}, Response: {response_text[:200]}")
+            # Return a safe default
+            return 50, response_text.strip()[:500]
 
     def score_batch(self, profiles: List[EmployeeProfile], icp: ICPSettings,
                    min_score: int = 60) -> List[ScoredLead]:
